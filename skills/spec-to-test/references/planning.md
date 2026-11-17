@@ -1,125 +1,125 @@
-# Fase 2 — Plano de implementação
+# Phase 2 — Implementation plan
 
-Quem implementa vai ler **só o plano** e o `ARCHITECTURE.md`. Tudo que ele precisa saber do repo entra no plano, com `arquivo:linha`.
+Whoever implements will read **only the plan** and `ARCHITECTURE.md`. Everything they need to know about the repo goes into the plan, with `file:line`.
 
-Nesta fase, o código do testware é só lido: o único arquivo escrito é o `02-plan.md` (e o `ARCHITECTURE.md`, no caso do passo 1). Valores de `.env*` nunca são lidos; liste só as chaves:
+In this phase, testware code is only read: the only file written is `02-plan.md` (and `ARCHITECTURE.md`, in the case of step 1). Values in `.env*` are never read; list only the keys:
 
 ```bash
 for f in .env*; do echo "$f"; grep -oE '^[A-Za-z0-9_]+=' "$f" | sort -u; done
 ```
 
-## Como buscar
+## How to search
 
-Monte o plano **lendo o mínimo**. A descoberta (passo 2) já entrega o mapa com linhas; cada leitura depois dela responde a uma pergunta que o plano precisa citar.
+Build the plan **reading as little as possible**. Discovery (step 2) already delivers the map with line numbers; each read after it answers a question the plan needs to cite.
 
-1. **Grep dirigido** (`grep -rn`) só para o que a descoberta não respondeu.
-2. **Read por faixa** (`offset`/`limit`, até ~150 linhas) em volta do que a descoberta ou o grep apontou. Cite `arquivo:linha` com o número que eles já deram.
-3. **Leitura inteira** só das specs de teste da operação (passo 3) e de uma spec de referência (passo 5).
-4. **Orçamento:** a descoberta abre um orçamento de 15 leituras (Read, Grep, Glob e Bash de leitura fora de `.test-generation/`), garantido pelo hook da skill. Gravar o `02-plan.md` fecha o orçamento. Ao esgotar, as leituras são bloqueadas: escreva o plano com o que tem e liste em "Riscos e pendências" o que ficou sem verificar. Para um testware grande, aumente com `--budget N`.
+1. **Targeted grep** (`grep -rn`) only for what discovery didn't answer.
+2. **Ranged Read** (`offset`/`limit`, up to ~150 lines) around what discovery or grep pointed to. Cite `file:line` with the number they already gave.
+3. **Full read** only of the operation's test specs (step 3) and of one reference spec (step 5).
+4. **Budget:** discovery opens a budget of 15 reads (Read, Grep, Glob and read-only Bash outside `.test-generation/`), enforced by the skill's hook. Writing `02-plan.md` closes the budget. When it runs out, reads are blocked: write the plan with what you have and list what was left unverified under "Risks and open items". For a large testware, raise it with `--budget N`.
 
-## Processo
+## Process
 
-### 1. Convenções
+### 1. Conventions
 
-Leia o `ARCHITECTURE.md` da raiz do testware. Ele define as camadas (onde ficam tipos, schemas, interfaces, services, config, fixtures, helpers e specs), nomes, padrões de espera e proibições. O plano segue o `ARCHITECTURE.md`; onde o código existente divergir dele, siga o documento e anote a divergência em "Riscos e pendências".
+Read `ARCHITECTURE.md` at the testware root. It defines the layers (where types, schemas, interfaces, services, config, fixtures, helpers and specs live), naming, waiting patterns and prohibitions. The plan follows `ARCHITECTURE.md`; where existing code diverges from it, follow the document and note the divergence under "Risks and open items".
 
-**Sem `ARCHITECTURE.md`** (e com o rascunho autorizado no checkpoint 1), monte um rascunho. Isso é feito uma vez por testware, e as leituras não contam no orçamento:
+**Without `ARCHITECTURE.md`** (and with the draft authorized at checkpoint 1), build a draft. This is done once per testware, and its reads don't count against the budget:
 
-1. Preencha [`../templates/ARCHITECTURE.md`](../templates/ARCHITECTURE.md) com o que o repo mostra: `ls` das pastas de topo, `playwright.config.*`, `package.json`, a config, o client HTTP, 1 service com sua interface, 1 model, 1 schema, a fixture base e 1 spec.
-2. Marque cada regra como **[atual]** (o código já faz) ou **[proposto]** (convenção nova que os casos exigem, ex.: ID no título). Divergências do código com a regra entram com `arquivo:linha`.
-3. Confronte os casos aprovados com a infraestrutura: o que eles precisam verificar e o testware não consegue (status HTTP não exposto pelo client, chamada sem token, falta de typecheck) vira uma pendência com opções e uma recomendação, no fim do rascunho.
-4. Grave em `.test-generation/ARCHITECTURE.draft.md` e **pare**: mostre o resumo e as pendências e peça as decisões.
-5. Com a aprovação, grave o `ARCHITECTURE.md` final na raiz (sem a seção de pendências) e siga para o passo 2. Decisões que exigem mudar a infraestrutura entram no plano como a camada **0. Pré-requisitos**.
+1. Fill in [`../templates/ARCHITECTURE.md`](../templates/ARCHITECTURE.md) with what the repo shows: `ls` of the top-level folders, `playwright.config.*`, `package.json`, the config, the HTTP client, 1 service with its interface, 1 model, 1 schema, the base fixture and 1 spec.
+2. Mark each rule as **[current]** (the code already does it) or **[proposed]** (a new convention the cases require, e.g. ID in the title). Divergences between code and rule go in with `file:line`.
+3. Check the approved cases against the infrastructure: whatever they need to verify that the testware can't (HTTP status not exposed by the client, call without a token, no typecheck) becomes an open item with options and a recommendation, at the end of the draft.
+4. Write it to `.test-generation/ARCHITECTURE.draft.md` and **stop**: show the summary and the open items and ask for decisions.
+5. With approval, write the final `ARCHITECTURE.md` at the root (without the open items section) and go on to step 2. Decisions that require changing the infrastructure go into the plan as layer **0. Prerequisites**.
 
-### 2. Descoberta
+### 2. Discovery
 
-Rode, com o domínio e a rota do `01-test-cases.md` (e as peças de infraestrutura que o `ARCHITECTURE.md` cita, em `--also`):
+Run it with the domain and route from `01-test-cases.md` (and the infrastructure pieces `ARCHITECTURE.md` mentions, in `--also`):
 
 ```bash
-node "<diretório base da skill, informado quando ela foi carregada>/scripts/discover.mjs" <domínio> <trecho-da-rota> [--also <arquivo>]... [--budget N]
-# ex.: node .../discover.mjs job /api/Job --also core/HttpClient.ts --also tests/baseTest.ts
+node "<skill base directory, given when it was loaded>/scripts/discover.mjs" <domain> <route-fragment> [--also <file>]... [--budget N]
+# e.g.: node .../discover.mjs job /api/Job --also core/HttpClient.ts --also tests/baseTest.ts
 ```
 
-A saída lista, com `arquivo:linha`: as rotas no código de produção, o esqueleto (exports, métodos com assinatura, campos de tipos) de cada arquivo que menciona os termos, e os títulos dos testes que os mencionam. Daí anote, **só do que os casos usam**: o método da interface/service que chama a rota (ou que ele falta), os tipos de body/response/enum e o schema, a chave de config, a fixture e os helpers do domínio. Abra um arquivo só quando a decisão depender do corpo dele, não da assinatura.
+The output lists, with `file:line`: the routes in production code, the skeleton (exports, methods with signatures, type fields) of each file that mentions the terms, and the titles of the tests that mention them. From it, note **only what the cases use**: the interface/service method that calls the route (or that it's missing), the body/response/enum types and the schema, the config key, the fixture and the domain helpers. Open a file only when the decision depends on its body, not its signature.
 
-Se o `ARCHITECTURE.md` indicar um comando de índice próprio do testware, rode-o também.
+If `ARCHITECTURE.md` points to an index command of the testware's own, run it too.
 
-### 3. Reconciliação com os testes existentes
+### 3. Reconciliation with existing tests
 
-Os testes da operação são os que a descoberta listou; complete com grep pelo prefixo de ID ou pelo nome do método do service, se preciso. Nada encontrado: modo `criação`, pule para o passo 4.
+The operation's tests are the ones discovery listed; complete with a grep for the ID prefix or the service method name, if needed. Nothing found: `create` mode, skip to step 4.
 
-Leia por completo as specs que casaram e classifique **cada caso**:
+Read the matching specs in full and classify **each case**:
 
-| Status | Quando | No plano |
-|--------|--------|----------|
-| `coberto` | Existe teste com a mesma condição e as mesmas asserções | Nada a fazer; cite o teste |
-| `divergente` | Mesma condição, outro resultado esperado | Alterar: o que muda, de quê para quê |
-| `parcial` | Existe teste, faltam asserções do caso | Estender o teste |
-| `novo` | Não existe teste | Criar |
+| Status | When | In the plan |
+|--------|------|-------------|
+| `covered` | A test exists with the same condition and the same assertions | Nothing to do; cite the test |
+| `divergent` | Same condition, different expected result | Change: what changes, from what to what |
+| `partial` | A test exists, missing some of the case's assertions | Extend the test |
+| `new` | No test exists | Create |
 
-Depois, o caminho inverso: todo teste da operação sem caso correspondente é **órfão**. Recomende `remover`, `ajustar` ou `manter`, com o motivo. Remoção só acontece com decisão do usuário no checkpoint 2.
+Then the reverse direction: every test of the operation with no matching case is an **orphan**. Recommend `remove`, `adjust` or `keep`, with the reason. Removal only happens with a user decision at checkpoint 2.
 
-Use "Afetado pela última versão" como pista, mas quem decide o status é a comparação com o teste.
+Use "Affected by latest version" as a hint, but the status is decided by comparing with the test.
 
-**IDs:** casos já cobertos herdam o ID do teste existente; IDs existentes nunca são renumerados. Casos `novo` no modo atualização continuam a numeração do prefixo existente.
+**IDs:** already covered cases inherit the existing test's ID; existing IDs are never renumbered. `new` cases in update mode continue the existing prefix's numbering.
 
-### 4. Casos `blocked` (se houver)
+### 4. `blocked` cases (if any)
 
-Para cada um, procure no testware um jeito de montar a pré-condição ou observar o resultado: outra rota da API, polling até um estado final, dados de ambiente preparados por chave de config, janela fixa para provar um não-efeito. Resultado: `testável` (com o mecanismo e `arquivo:linha`) ou `blocked` confirmado (vai para "Fora do escopo").
+For each one, look in the testware for a way to set up the precondition or observe the result: another API route, polling until a final state, environment data prepared by config key, a fixed window to prove a non-effect. Result: `testable` (with the mechanism and `file:line`) or `blocked` confirmed (goes to "Out of scope").
 
-### 5. Referência de estilo
+### 5. Style reference
 
-Escolha **1** spec de teste parecida (mesmo domínio, mesmo tipo de operação, mesmo uso de polling). No modo atualização, a referência é a própria spec alterada. Sem nenhuma spec no repo, as referências são o service e o schema mais parecidos, e o plano registra que esta spec define o padrão das próximas.
+Pick **1** similar test spec (same domain, same kind of operation, same use of polling). In update mode, the reference is the changed spec itself. With no spec in the repo, the references are the most similar service and schema, and the plan records that this spec sets the pattern for the next ones.
 
-### 6. Matriz de reuso
+### 6. Reuse matrix
 
-Para cada pré-condição, ação e asserção dos casos a criar ou alterar: **reusar** (arquivo:linha), **estender** (ex.: método novo num service existente) ou **criar** (arquivo, camada, assinatura). Alteração em algo compartilhado lista todas as specs que o usam (`grep -rln <nome>` nas pastas de teste): elas vão para "Specs impactadas".
+For each precondition, action and assertion of the cases to create or change: **reuse** (file:line), **extend** (e.g. new method on an existing service) or **create** (file, layer, signature). A change to something shared lists every spec that uses it (`grep -rln <name>` in the test folders): they go under "Impacted specs".
 
-### 7. Config, contrato e execução
+### 7. Config, contract and execution
 
-- **Config:** valor de ambiente novo (URL, ID de massa de teste, credencial) ganha chave na config do testware e entra nos `.env` de cada ambiente. Lembre que uma chave obrigatória nova quebra ambientes sem ela.
-- **Contrato:** resposta nova ou alterada muda o tipo **e** o schema juntos, coerentes entre si. Tipo compartilhado lista as operações afetadas.
-- **Execução:** decida se a spec precisa de modo `serial` (estado compartilhado), `test.setTimeout` (assíncrono) e massa dedicada por teste, e como evitar estado residual que afete outras specs.
+- **Config:** a new environment value (URL, test data ID, credential) gets a key in the testware's config and goes into each environment's `.env`. Remember that a new required key breaks environments without it.
+- **Contract:** a new or changed response changes the type **and** the schema together, consistent with each other. A shared type lists the affected operations.
+- **Execution:** decide whether the spec needs `serial` mode (shared state), `test.setTimeout` (async) and dedicated test data per test, and how to avoid residual state that affects other specs.
 
-## Formato do `02-plan.md`
+## `02-plan.md` format
 
 ```markdown
-# <Feature> — Plano de implementação
+# <Feature> — Implementation plan
 
-- Casos: ./01-test-cases.md (fonte <...>, versão da spec <x.y.z>)
-- Modo: criação | atualização (motivo, se divergir do indicado)
-- Spec de teste: <caminho> (criar | alterar; versão no cabeçalho: <antiga> → <nova>)
+- Cases: ./01-test-cases.md (source <...>, spec version <x.y.z>)
+- Mode: create | update (reason, if it differs from the indicated one)
+- Test spec: <path> (create | change; version in header: <old> → <new>)
 
-## Reconciliação
-| Caso | Status | Teste existente | O que muda |
+## Reconciliation
+| Case | Status | Existing test | What changes |
 
-## Testes órfãos
-| Teste | Arquivo:linha | Provável motivo | Recomendação |
+## Orphan tests
+| Test | File:line | Likely reason | Recommendation |
 
-## Casos blocked reavaliados
-| Caso | Resultado | Mecanismo / motivo | Referência |
+## Blocked cases re-evaluated
+| Case | Result | Mechanism / reason | Reference |
 
-## Referências a imitar
-- `<arquivo>:L-L`: por quê
+## References to imitate
+- `<file>:L-L`: why
 
-## Matriz de reuso
-| Caso | Passo | Reusar | Estender | Criar |
+## Reuse matrix
+| Case | Step | Reuse | Extend | Create |
 
-## Mudanças por camada (ordem de implementação)
-Uma seção por camada, na ordem que o ARCHITECTURE.md define (0. pré-requisitos de infraestrutura, se houver → tipos e schemas → services → config → fixtures → helpers → specs). Cada item é **[criar]** ou **[alterar]**; num [alterar], o trecho (`arquivo:linha`) e o antes/depois. Na seção da spec de teste: cabeçalho, estrutura de `describe`, `serial`/timeout e, por caso, `ID: título` → fixture, passos, helpers e asserções.
+## Changes by layer (implementation order)
+One section per layer, in the order ARCHITECTURE.md defines (0. infrastructure prerequisites, if any → types and schemas → services → config → fixtures → helpers → specs). Each item is **[create]** or **[change]**; for a [change], the snippet (`file:line`) and the before/after. In the test spec section: header, `describe` structure, `serial`/timeout and, per case, `ID: title` → fixture, steps, helpers and assertions.
 
-## Specs impactadas
-- <arquivo>: usa <nome alterado>
+## Impacted specs
+- <file>: uses <changed name>
 
-## Variáveis de ambiente
-| Chave na config | Variável | Nova? | Arquivos .env |
+## Environment variables
+| Config key | Variable | New? | .env files |
 
-## Fora do escopo
-- XXX-NN: motivo
+## Out of scope
+- XXX-NN: reason
 
-## Riscos e pendências
-- divergências entre ARCHITECTURE.md e código, estado residual, decisões que só o usuário toma
+## Risks and open items
+- divergences between ARCHITECTURE.md and code, residual state, decisions only the user makes
 
-## Decisões
-(preenchida no checkpoint 2)
+## Decisions
+(filled in at checkpoint 2)
 ```

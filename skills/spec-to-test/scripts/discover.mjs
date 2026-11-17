@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// Descoberta da fase 2 do spec-to-test: numa chamada só, mostra o que o testware
-// já tem para os termos da operação (domínio, recurso, trecho da rota).
-// Sem dependências. Abre o orçamento de leituras usado pelo hook budget-hook.mjs.
+// spec-to-test phase 2 discovery: in a single call, shows what the testware
+// already has for the operation's terms (domain, resource, route fragment).
+// No dependencies. Opens the read budget used by the budget-hook.mjs hook.
 //
-// Uso: node discover.mjs <termo> [termo...] [--also <caminho>]... [--budget N]
-// Ex.:  node discover.mjs job /api/Job --also core/HttpClient.ts --budget 15
+// Usage: node discover.mjs <term> [term...] [--also <path>]... [--budget N]
+// E.g.:  node discover.mjs job /api/Job --also core/HttpClient.ts --budget 15
 
 import { execSync } from "node:child_process";
 import fs from "node:fs";
@@ -20,7 +20,7 @@ for (let i = 0; i < args.length; i++) {
   else terms.push(args[i]);
 }
 if (!terms.length) {
-  console.error("uso: discover.mjs <termo> [termo...] [--also <caminho>] [--budget N]");
+  console.error("usage: discover.mjs <term> [term...] [--also <path>] [--budget N]");
   process.exit(1);
 }
 
@@ -55,11 +55,11 @@ const matches = (s) => needles.some((n) => s.toLowerCase().includes(n));
 const CONTROL = /^(if|for|while|switch|catch|return|function|await|new|super|typeof|throw|else)$/;
 const MAX_OUTLINE = 60;
 
-// Esqueleto do arquivo: exports, membros de classe/interface com assinatura, campos de type.
+// File skeleton: exports, class/interface members with signatures, type fields.
 function outline(lines) {
   const out = [];
   const open = (s) => (s.match(/\(/g) || []).length - (s.match(/\)/g) || []).length;
-  // Junta uma assinatura de várias linhas enquanto houver "(" aberto (e o tipo de retorno, se vier na linha seguinte).
+  // Join a multi-line signature while there is an open "(" (and the return type, if it comes on the next line).
   const joinSig = (i) => {
     let s = lines[i].trim(), j = i;
     while (open(s) > 0 && j + 1 < lines.length && j - i < 8) s += " " + lines[++j].trim();
@@ -93,7 +93,7 @@ function outline(lines) {
       i = j;
     }
   }
-  return out.length > MAX_OUTLINE ? [...out.slice(0, MAX_OUTLINE), `... (+${out.length - MAX_OUTLINE} linhas)`] : out;
+  return out.length > MAX_OUTLINE ? [...out.slice(0, MAX_OUTLINE), `... (+${out.length - MAX_OUTLINE} lines)`] : out;
 }
 
 const files = listFiles();
@@ -117,22 +117,22 @@ for (const f of files) {
 
 const hr = (t) => console.log(`\n## ${t}\n`);
 
-console.log(`# Descoberta: ${terms.join(" ")}`);
-console.log(`(${files.length} arquivos de código varridos; nenhum precisa ser aberto para saber o que está listado aqui)`);
+console.log(`# Discovery: ${terms.join(" ")}`);
+console.log(`(${files.length} code files scanned; none needs to be opened to know what is listed here)`);
 
-hr(`Rotas no código de produção que contêm ${routeNeedles.join(", ") || "(nenhum termo com /)"}`);
-console.log(routes.length ? routes.join("\n") : "nenhuma");
+hr(`Routes in production code containing ${routeNeedles.join(", ") || "(no term with /)"}`);
+console.log(routes.length ? routes.join("\n") : "none");
 
-hr("Código de produção que menciona os termos (esqueleto com linhas)");
-if (!prod.length) console.log("nenhum");
+hr("Production code mentioning the terms (skeleton with lines)");
+if (!prod.length) console.log("none");
 for (const { f, lines } of prod.sort((a, b) => a.f.localeCompare(b.f))) {
   console.log(`### ${f}`);
-  console.log(outline(lines).join("\n") || "(sem exports)");
+  console.log(outline(lines).join("\n") || "(no exports)");
   console.log();
 }
 
-hr("Testes que mencionam os termos");
-if (!tests.length) console.log("nenhum");
+hr("Tests mentioning the terms");
+if (!tests.length) console.log("none");
 for (const { f, lines } of tests.sort((a, b) => a.f.localeCompare(b.f))) {
   console.log(`### ${f}`);
   lines.forEach((l, i) => {
@@ -143,13 +143,13 @@ for (const { f, lines } of tests.sort((a, b) => a.f.localeCompare(b.f))) {
 }
 
 for (const a of also) {
-  hr(`Esqueleto de ${a}`);
-  try { console.log(outline(fs.readFileSync(a, "utf8").split("\n")).join("\n") || "(sem exports)"); }
-  catch { console.log("não encontrado"); }
+  hr(`Skeleton of ${a}`);
+  try { console.log(outline(fs.readFileSync(a, "utf8").split("\n")).join("\n") || "(no exports)"); }
+  catch { console.log("not found"); }
 }
 
-// Abre o orçamento de leituras da fase 2 (lido pelo budget-hook.mjs).
+// Open the phase 2 read budget (read by budget-hook.mjs).
 fs.mkdirSync(".test-generation", { recursive: true });
 if (!fs.existsSync(".test-generation/.gitignore")) fs.writeFileSync(".test-generation/.gitignore", "*\n");
 fs.writeFileSync(".test-generation/.read-budget", JSON.stringify({ used: 0, limit: budget }) + "\n");
-console.log(`\n---\nOrçamento aberto: ${budget} leituras até gravar o 02-plan.md.`);
+console.log(`\n---\nBudget opened: ${budget} reads until 02-plan.md is written.`);

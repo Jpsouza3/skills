@@ -1,64 +1,64 @@
 # spec-to-test
 
-Skill do Claude Code que transforma a spec de uma feature num plano de testes de API (Playwright) para qualquer testware que siga o boilerplate [testware-template](https://github.com/Jpsouza3/testware-template).
+Claude Code skill that turns a feature spec into an API test plan (Playwright) for any testware that follows the [testware-template](https://github.com/Jpsouza3/testware-template) boilerplate.
 
 ```text
-spec (gh / local) ──► 01-test-cases.md ──⏸──► 02-plan.md ──⏸──► fim
+spec (gh / local) ──► 01-test-cases.md ──⏸──► 02-plan.md ──⏸──► done
 ```
 
-- **Fase 1:** spec → casos de teste. Lê só a spec.
-- **Fase 2:** casos → plano de implementação, seguindo o `ARCHITECTURE.md` do testware e reconciliando com os testes que já existem.
-- **⏸ Checkpoints:** a skill para depois de cada fase e só avança com aprovação.
-- A implementação fica fora: numa sessão nova, "implemente `.test-generation/<slug>/02-plan.md`".
+- **Phase 1:** spec → test cases. Reads only the spec.
+- **Phase 2:** cases → implementation plan, following the testware's `ARCHITECTURE.md` and reconciling with the tests that already exist.
+- **⏸ Checkpoints:** the skill stops after each phase and only moves on with approval.
+- Implementation is out of scope: in a new session, "implement `.test-generation/<slug>/02-plan.md`".
 
-Tudo roda num único contexto, sem subagentes. As regras de cada fase ficam em `references/` e só entram no contexto quando a fase começa.
+Everything runs in a single context, with no subagents. Each phase's rules live in `references/` and only enter the context when the phase starts.
 
-Os arquivos vão para `.test-generation/<slug>/` dentro do testware. A pasta tem um `.gitignore` próprio com `*`, então fica fora do git sem mexer no `.gitignore` do repo.
+Files go to `.test-generation/<slug>/` inside the testware. The folder has its own `.gitignore` containing `*`, so it stays out of git without touching the repo's `.gitignore`.
 
-Na primeira execução num testware sem `ARCHITECTURE.md`, a fase 2 gera um rascunho (`.test-generation/ARCHITECTURE.draft.md`), marcando o que é **[atual]** e o que é **[proposto]**, e para com as pendências de infraestrutura que os casos revelam (ex.: o client HTTP não expõe o status). Depois de aprovado, ele vai para a raiz.
+On the first run in a testware without `ARCHITECTURE.md`, phase 2 generates a draft (`.test-generation/ARCHITECTURE.draft.md`), marking what is **[current]** and what is **[proposed]**, and stops with the infrastructure gaps the cases reveal (e.g. the HTTP client does not expose the status). Once approved, it moves to the root.
 
-### Descoberta e orçamento de leituras
+### Discovery and read budget
 
-A fase 2 começa com `scripts/discover.mjs <domínio> <rota>`. Numa só chamada, ele devolve o que o testware já tem para a operação, com `arquivo:linha`: as rotas, o esqueleto das interfaces, services, models e schemas (assinaturas e campos) e os testes existentes. Assim o agente não precisa explorar o projeto.
+Phase 2 starts with `scripts/discover.mjs <domain> <route>`. In a single call, it returns what the testware already has for the operation, with `file:line`: the routes, the skeleton of interfaces, services, models and schemas (signatures and fields) and the existing tests. That way the agent doesn't need to explore the project.
 
-Ele também abre um orçamento de leituras (15 por padrão, `--budget N`). O hook declarado no frontmatter da skill conta Read/Grep/Glob/Bash de leitura fora de `.test-generation/`. Ao esgotar, bloqueia e manda escrever o plano, listando o que ficou sem verificar. Gravar o `02-plan.md` fecha o orçamento e registra o uso em `.test-generation/budget.log`.
+It also opens a read budget (15 by default, `--budget N`). The hook declared in the skill's frontmatter counts Read/Grep/Glob/read-only Bash outside `.test-generation/`. When the budget runs out, it blocks and tells the agent to write the plan, listing what was left unverified. Writing `02-plan.md` closes the budget and logs usage to `.test-generation/budget.log`.
 
-O hook procura o script em `$CLAUDE_PLUGIN_ROOT/skills/spec-to-test`, `<projeto>/.claude/skills/spec-to-test` e `~/.claude/skills/spec-to-test`, porque `${CLAUDE_SKILL_DIR}` não chega aos comandos de hook. Instale a skill num desses lugares. Requer Node (que todo testware Playwright já tem).
+The hook looks for the script in `$CLAUDE_PLUGIN_ROOT/skills/spec-to-test`, `<project>/.claude/skills/spec-to-test` and `~/.claude/skills/spec-to-test`, because `${CLAUDE_SKILL_DIR}` doesn't reach hook commands. Install the skill in one of these places. Requires Node (which every Playwright testware already has).
 
-### Custo de referência
+### Reference cost
 
-Execução de teste no sparksys.testware, spec com 11 casos em modo atualização, incluindo a geração do `ARCHITECTURE.md`: fase 1 ≈ US$0,43; rascunho da arquitetura ≈ US$1,45 (uma vez por testware); plano com descoberta ≈ US$0,80–1,10 (13 leituras depois da descoberta; com `--budget 6` o hook bloqueou uma vez e o plano saiu com as lacunas listadas).
+Test run on sparksys.testware, spec with 11 cases in update mode, including generating `ARCHITECTURE.md`: phase 1 ≈ US$0.43; architecture draft ≈ US$1.45 (once per testware); plan with discovery ≈ US$0.80–1.10 (13 reads after discovery; with `--budget 6` the hook blocked once and the plan came out with the gaps listed).
 
-## Estrutura
+## Structure
 
 ```text
 spec-to-test/
-├── SKILL.md                    # fluxo e checkpoints
+├── SKILL.md                    # flow and checkpoints
 ├── references/
-│   ├── reading-specs.md        # leitura via gh (somente leitura) ou local
-│   ├── translation.md          # fase 1: regras e formato dos casos
-│   └── planning.md             # fase 2: processo e formato do plano
+│   ├── reading-specs.md        # reading via gh (read-only) or local
+│   ├── translation.md          # phase 1: rules and case format
+│   └── planning.md             # phase 2: process and plan format
 ├── scripts/
-│   ├── discover.mjs            # descoberta da fase 2 numa chamada: rotas, esqueletos com linhas, testes
-│   └── budget-hook.mjs         # hook PreToolUse: limita as leituras da fase 2
+│   ├── discover.mjs            # phase 2 discovery in one call: routes, skeletons with lines, tests
+│   └── budget-hook.mjs         # PreToolUse hook: limits phase 2 reads
 ├── templates/
-│   └── ARCHITECTURE.md         # convenções a preencher em cada testware
+│   └── ARCHITECTURE.md         # conventions to fill in for each testware
 └── examples/
-    └── settings.json           # allow/deny do gh para o .claude/settings.json do testware
+    └── settings.json           # gh allow/deny rules for the testware's .claude/settings.json
 ```
 
-## Instalação
+## Installation
 
-Veja o [README da raiz](../../README.md). Depois, em cada testware:
+See the [root README](../../README.md). Then, in each testware:
 
-1. Crie o `ARCHITECTURE.md` na raiz a partir de `templates/ARCHITECTURE.md`, ou deixe a skill gerar o rascunho na primeira execução.
-2. Junte as regras de `examples/settings.json` ao `.claude/settings.json`.
-3. Spec remota: `gh` autenticado com token **fine-grained somente leitura** (Contents: read) nos repos de spec. A skill recusa tokens clássicos/OAuth.
+1. Create `ARCHITECTURE.md` at the root from `templates/ARCHITECTURE.md`, or let the skill generate the draft on the first run.
+2. Merge the rules from `examples/settings.json` into `.claude/settings.json`.
+3. Remote spec: `gh` authenticated with a **read-only fine-grained** token (Contents: read) on the spec repos. The skill refuses classic/OAuth tokens.
 
-## Uso
+## Usage
 
 ```text
-/spec-to-test https://github.com/<owner>/<repo>/tree/<branch>/<pasta-da-feature>
-/spec-to-test <owner>/<repo> specs/criar-bloqueio.md@main --update
+/spec-to-test https://github.com/<owner>/<repo>/tree/<branch>/<feature-folder>
+/spec-to-test <owner>/<repo> specs/create-hold.md@main --update
 /spec-to-test specs/local.md --only-cases
 ```

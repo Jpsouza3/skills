@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// Hook PreToolUse do spec-to-test: limita as leituras da fase 2.
-// Só atua enquanto existir .test-generation/.read-budget (criado pelo discover.mjs).
-// Gravar o 02-plan.md fecha o orçamento. Leituras dentro de .test-generation/ e da
-// própria skill não contam.
+// spec-to-test PreToolUse hook: limits phase 2 reads.
+// Only active while .test-generation/.read-budget exists (created by discover.mjs).
+// Writing 02-plan.md closes the budget. Reads inside .test-generation/ and the
+// skill itself don't count.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -12,7 +12,7 @@ for await (const chunk of process.stdin) input += chunk;
 let ev;
 try { ev = JSON.parse(input); } catch { process.exit(0); }
 
-// Acha o .read-budget subindo a partir do cwd (o agente pode ter feito cd).
+// Find .read-budget walking up from cwd (the agent may have cd'd).
 let dir = ev.cwd || process.cwd();
 let budgetFile = null;
 for (;;) {
@@ -28,12 +28,12 @@ const tool = ev.tool_name;
 const ti = ev.tool_input || {};
 const target = String(ti.file_path || ti.path || ti.pattern || ti.command || "");
 
-// Gravar o plano fecha a fase.
+// Writing the plan closes the phase.
 if ((tool === "Write" || tool === "Edit") && /02-plan\.md$/.test(ti.file_path || "")) {
   try {
     const s = JSON.parse(fs.readFileSync(budgetFile, "utf8"));
     const log = path.join(path.dirname(budgetFile), "budget.log");
-    fs.appendFileSync(log, `${new Date().toISOString()}\t${ti.file_path}\tleituras ${s.used}/${s.limit}${s.blocked ? `\tbloqueios ${s.blocked}` : ""}\n`);
+    fs.appendFileSync(log, `${new Date().toISOString()}\t${ti.file_path}\treads ${s.used}/${s.limit}${s.blocked ? `\tblocked ${s.blocked}` : ""}\n`);
   } catch {}
   fs.rmSync(budgetFile, { force: true });
   process.exit(0);
@@ -54,8 +54,8 @@ if (state.used >= state.limit) {
   state.blocked = (state.blocked || 0) + 1;
   fs.writeFileSync(budgetFile, JSON.stringify(state) + "\n");
   process.stderr.write(
-    `Orçamento de descoberta da fase 2 esgotado (${state.limit} leituras). ` +
-    `Escreva agora o .test-generation/<slug>/02-plan.md com o que já tem e liste em "Riscos e pendências" o que ficou sem verificar.\n`
+    `Phase 2 discovery budget exhausted (${state.limit} reads). ` +
+    `Write .test-generation/<slug>/02-plan.md now with what you have and list what was left unverified under "Risks and open items".\n`
   );
   process.exit(2);
 }

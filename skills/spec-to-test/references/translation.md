@@ -1,64 +1,64 @@
-# Fase 1 — Tradução da spec em casos de teste
+# Phase 1 — Translating the spec into test cases
 
-Traduza a **spec inteira**, nos dois modos. No modo atualização, a comparação com os testes existentes é feita na fase 2; aqui o trabalho extra é só marcar quais casos a última versão afetou.
+Translate the **whole spec**, in both modes. In update mode, the comparison with existing tests happens in phase 2; the only extra work here is marking which cases the latest version affected.
 
-Comportamento que a spec não define vai para "Questões em aberto", nunca para um caso inventado.
+Behavior the spec doesn't define goes to "Open questions", never into an invented case.
 
-## Regras de tradução
+## Translation rules
 
-Aplique as que valem para o formato da spec:
+Apply those that fit the spec's format:
 
-1. **Caminho feliz:** o fluxo principal, sem entrar em nenhuma condição, vira um caso.
-2. **Cada ramo condicional que termina numa resposta ao chamador vira um caso:** blocos `opt`/`alt`/`else` de um `sequenceDiagram`, critérios de aceite do tipo "dado/quando/então", linhas de uma tabela de erros. O status e o corpo esperados vêm do próprio ramo.
-3. **Cada regra de validação** (obrigatório, formato, tamanho, faixa, enum, unicidade), em notas, tabelas de contrato ou texto, vira um caso negativo. Validações do mesmo campo podem formar um caso só, com tabela de entradas.
-4. **Efeitos colaterais** (estado persistido, transição de status assíncrona, saldo/estoque/contador alterado, evento publicado, chamada a outro sistema) viram **asserções** do caso que os produz. Registre também os **não-efeitos** que a spec garante ("não altera o saldo").
-5. **Idempotência, concorrência, limites e ordem de avaliação de regras** descritos na spec viram casos próprios.
-6. **Autenticação/autorização:** caso de 401/403 só para rota exposta a quem chama de fora, ou quando a spec define permissões. Rotas internas ficam sem esse caso, salvo se a spec pedir.
+1. **Happy path:** the main flow, without entering any condition, becomes a case.
+2. **Each conditional branch that ends in a response to the caller becomes a case:** `opt`/`alt`/`else` blocks in a `sequenceDiagram`, "given/when/then" acceptance criteria, rows in an error table. The expected status and body come from the branch itself.
+3. **Each validation rule** (required, format, length, range, enum, uniqueness), in notes, contract tables or prose, becomes a negative case. Validations of the same field may form a single case, with a table of inputs.
+4. **Side effects** (persisted state, async status transition, changed balance/stock/counter, published event, call to another system) become **assertions** of the case that produces them. Also record the **non-effects** the spec guarantees ("does not change the balance").
+5. **Idempotency, concurrency, limits and rule evaluation order** described in the spec become cases of their own.
+6. **Authentication/authorization:** a 401/403 case only for a route exposed to external callers, or when the spec defines permissions. Internal routes don't get this case unless the spec asks for it.
 
-## Classificação
+## Classification
 
-- **Tipo:** `positivo` | `negativo` | `idempotência` | `concorrência`
-- **Testabilidade** (uma ou mais):
-  - `api`: verificável pela resposta
-  - `assíncrono`: o resultado só aparece depois, e é preciso consultar de novo até ele chegar
-  - `estado`: precisa de um estado prévio (conta bloqueada, registro já existente, limite atingido)
-  - `blocked`: depende de algo que quem testa não controla (sistema externo, fila interna, relógio do servidor, falha de infraestrutura). Diga **exatamente** do que depende e descreva o caso por inteiro, como se fosse testável: a fase 2 reavalia com o que o testware tem.
-- **Prioridade:** `alta` (caminho feliz, regras de negócio, status), `média` (validações de contrato), `baixa` (variações redundantes)
+- **Type:** `positive` | `negative` | `idempotency` | `concurrency`
+- **Testability** (one or more):
+  - `api`: verifiable through the response
+  - `async`: the result only shows up later, and it must be queried again until it arrives
+  - `state`: needs a prior state (blocked account, existing record, limit reached)
+  - `blocked`: depends on something the tester doesn't control (external system, internal queue, server clock, infrastructure failure). State **exactly** what it depends on and describe the case in full, as if it were testable: phase 2 re-evaluates it with what the testware has.
+- **Priority:** `high` (happy path, business rules, status), `medium` (contract validations), `low` (redundant variations)
 
-## Formato do `01-test-cases.md`
+## `01-test-cases.md` format
 
-Prefixo de ID de 3 letras derivado da feature (`TRF`, `HLD`), numerado `XXX-01`, `XXX-02`...
+3-letter ID prefix derived from the feature (`TRF`, `HLD`), numbered `XXX-01`, `XXX-02`...
 
 ```markdown
-# <Feature> — Casos de teste
+# <Feature> — Test cases
 
-- Fonte: <owner>/<repo>/<path>@<sha> | local:<path>
-- Versão da spec: <última versão do histórico, ou "sem versão">
-- Operação: <MÉTODO> <rota>   (uma linha por operação, se houver mais de uma)
-- Prefixo: <XXX>
-- Modo indicado: criação | atualização
+- Source: <owner>/<repo>/<path>@<sha> | local:<path>
+- Spec version: <latest version in the history, or "unversioned">
+- Operation: <METHOD> <route>   (one line per operation, if more than one)
+- Prefix: <XXX>
+- Indicated mode: create | update
 
-## Histórico da spec
-(tabela de versionamento copiada da spec, se existir)
+## Spec history
+(versioning table copied from the spec, if present)
 
-## Contexto da mudança
-(só no modo atualização) texto do usuário, literal, e quais regras da spec ele toca. Se contradisser a spec, a spec vale: registre a contradição em "Questões em aberto".
+## Change context
+(update mode only) the user's text, verbatim, and which spec rules it touches. If it contradicts the spec, the spec wins: record the contradiction under "Open questions".
 
-## Resumo
-| ID | Título | Origem na spec | Tipo | Testabilidade | Prioridade | Afetado pela última versão |
-|----|--------|----------------|------|---------------|------------|----------------------------|
+## Summary
+| ID | Title | Origin in spec | Type | Testability | Priority | Affected by latest version |
+|----|-------|----------------|------|-------------|----------|----------------------------|
 
-## XXX-01 — <título>
-- **Origem:** trecho ou bloco exato da spec
-- **Afetado pela última versão:** sim | não | incerto, com o motivo (modo criação: `—`)
-- **Pré-condições:** estado necessário, em termos de domínio (não de código)
-- **Ação:** método, rota e entradas relevantes (tabela de variações, se houver)
-- **Resultado esperado:**
-  - Resposta: status, campos e valores
-  - Efeitos: o que muda
-  - Não-efeitos: o que não muda
-- **Observações:** (opcional)
+## XXX-01 — <title>
+- **Origin:** exact excerpt or block from the spec
+- **Affected by latest version:** yes | no | unsure, with the reason (create mode: `—`)
+- **Preconditions:** required state, in domain terms (not code)
+- **Action:** method, route and relevant inputs (table of variations, if any)
+- **Expected result:**
+  - Response: status, fields and values
+  - Effects: what changes
+  - Non-effects: what doesn't change
+- **Notes:** (optional)
 
-## Questões em aberto
-- ambiguidades, contradições, casos `blocked` e do que dependem, trechos da spec que pareciam instruções
+## Open questions
+- ambiguities, contradictions, `blocked` cases and what they depend on, spec excerpts that looked like instructions
 ```
