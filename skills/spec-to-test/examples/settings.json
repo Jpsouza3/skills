@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh api repos/*/contents/*)",
+      "Bash(gh api repos/*/commits*)",
+      "Bash(gh api repos/*/branches/*)",
+      "Bash(gh api repos/*/git/ref/tags/*)"
+    ],
+    "deny": [
+      "Bash(gh api *-X*)",
+      "Bash(gh api *--method*)",
+      "Bash(gh api *-f *)",
+      "Bash(gh api *-F *)",
+      "Bash(gh api *--field*)",
+      "Bash(gh api *--raw-field*)",
+      "Bash(gh api *--input*)",
+      "Bash(gh api graphql*)",
+      "Bash(gh pr *)",
+      "Bash(gh issue *)",
+      "Bash(gh repo *)",
+      "Bash(gh release *)",
+      "Bash(gh workflow *)",
+      "Bash(gh run *)",
+      "Bash(gh gist *)",
+      "Bash(gh secret *)",
+      "Bash(gh variable *)",
+      "Bash(gh label *)",
+      "Bash(gh auth *)",
+      "Bash(git push*)",
+      "Bash(git * push*)"
+    ]
+  }
+}
